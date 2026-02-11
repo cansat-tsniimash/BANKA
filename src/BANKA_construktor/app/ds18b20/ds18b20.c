@@ -50,10 +50,18 @@ void one_vire_write_bit(uint8_t bit)
 	}
 }
 
-
-uint8_t one_wire_read_bit(void)
+void one_wire_write_byte(uint8_t byte)
 {
-    uint8_t bit;
+	for (int i = 0; i < 8; i++)
+	{
+		//one_wire_write_bit(); 0xFF << 4  >>  4 0xFF & 0b00010000 = 0b00010000 (1 << i)
+
+	}
+}
+
+GPIO_PinState one_wire_read_bit(void)
+{
+	GPIO_PinState bit;
 
     one_wire_force_down();
     dwt_delay_us(1);
