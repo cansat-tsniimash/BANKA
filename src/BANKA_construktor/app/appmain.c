@@ -5,20 +5,32 @@
  *      Author: nikit
  */
 #include "stm32f1xx.h"
+#include "delay/dwt_delay.h"
+
+
+void one_wire_write_byte(uint8_t byte);
+uint8_t one_wire_read_byte(void);
+GPIO_PinState one_wire_reset();
+void ds18b20_conv();
+float ds18b20_readtemp();
 
 void app_main(void)
 {
-	volatile uint8_t byte = 0b10100110;
+	dwt_delay_init();
+	uint32_t ds_stert_time = HAL_GetTick();
+	ds18b20_conv();
 	while(1)
 	{
-		for(int i = 0; i < 8; i++)
+
+		if ((HAL_GetTick() - ds_stert_time) > 750)
 		{
-			HAL_Delay(100);
-			if ((byte & (1 << i)) == 0 )
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-			else
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+			volatile float temp = ds18b20_readtemp();
+			ds18b20_conv();
+			ds_stert_time = HAL_GetTick();
 		}
+
+
+		/*HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
 	}
 	return;
 
