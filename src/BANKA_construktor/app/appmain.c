@@ -8,6 +8,8 @@
 #include "ds18b20/ds18b20.h"
 #include "neo6mv2/neo6mv2.h"
 #include "bmp280/bmp280.h"
+#include "lsm6ds3/lsm6ds3.h"
+
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
@@ -47,10 +49,38 @@ void app_main(void)
 	bme280_set_sensor_mode(BME280_NORMAL_MODE, &bmp280);
 	struct bme280_data bmp_data;
 
+	lsm_data_t lsm_bus;
+	lsm_bus.ADDR = 0x6A << 1;
+	lsm_bus.hi2c = &hi2c1;
+
+	stmdev_ctx_t lsm6ds3;
+	lsm6ds3.handle = &lsm_bus;
+	lsm6ds3.write_reg = lsm_write_reg;
+	lsm6ds3.read_reg = lsm_read_reg;
+
+	lsm6ds3_reset_set(&lsm6ds3, 1);
+	lsm6ds3_xl_full_scale_set(&lsm6ds3, LSM6DS3_16g);
+	lsm6ds3_xl_data_rate_set(&lsm6ds3, LSM6DS3_XL_ODR_104Hz);
+	lsm6ds3_gy_full_scale_set(&lsm6ds3, LSM6DS3_2000dps);
+	lsm6ds3_gy_data_rate_set(&lsm6ds3, LSM6DS3_GY_ODR_208Hz);
+
+	int16_t buf_lsm_gy[3] = {0};
+	int16_t buf_lsm_xl[3] = {0};
+	volatile float gyro[3] = {0};
+	volatile float acc[3] = {0};
 
 	while(1)
 	{
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
+
+		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
+		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
+
+		for (int i = 0; i < 3; i++)
+		{
+			acc[i] = lsm6ds3_from_fs16g_to_mg(buf_lsm_xl[i]) /1000.0;
+			gyro[i] = lsm6ds3_from_fs125dps_to_mdps(buf_lsm_gy[i]) /1000.0;
+		}
 
 		for (int i = 0; i <= 10; i++)
 		{
@@ -74,4 +104,8 @@ void app_main(void)
 	}
 	return;
 
+
+
+
 }
+
