@@ -23,6 +23,7 @@ int32_t lsm_write_reg (void *handle, uint8_t sub, const uint8_t *data, uint16_t 
 			return read;
 		}
 	}
+	return HAL_OK;
 }
 
 int32_t lsm_read_reg (void *handle, uint8_t sub, uint8_t *data, uint16_t len)
@@ -30,4 +31,5 @@ int32_t lsm_read_reg (void *handle, uint8_t sub, uint8_t *data, uint16_t len)
 	lsm_data_t *ptr = (lsm_data_t *)handle;
 	HAL_I2C_Master_Transmit (ptr->hi2c, ptr->ADDR, &sub, 1, 100);
 	HAL_I2C_Master_Receive (ptr->hi2c, ptr->ADDR, data, len, 150);
+	return HAL_OK;
 }
