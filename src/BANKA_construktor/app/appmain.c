@@ -10,6 +10,7 @@
 #include "bmp280/bmp280.h"
 #include "lsm6ds3/lsm6ds3.h"
 #include "lis2mdl/lis2mdl.h"
+#include "../Middlewares/Third_Party/FatFs/src/ff.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
@@ -87,6 +88,24 @@ void app_main(void)
 	int16_t buf_lis[3] = {0};
 	volatile float magn[3] = {0};
 
+	FATFS sd;
+	FIL pocket1;
+	char pocket1_path[] = "pocket1.bin";
+	FRESULT result_mount = f_mount(&sd, "", 1);
+	FRESULT rezult_pocket1 = 255;
+	UINT byte_count;
+
+	if (result_mount == FR_OK)
+	{
+		f_open(&pocket, &pocket1_path, FA_WRITE);
+	}
+	if (rezult_pocket1 == FR_OK);
+	{
+		f_write(&pocket1, buff, btw, &byte_count);
+	}
+
+
+
 	while(1)
 	{
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
@@ -127,9 +146,5 @@ void app_main(void)
 		/*HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
 	}
 	return;
-
-
-
-
 }
 
