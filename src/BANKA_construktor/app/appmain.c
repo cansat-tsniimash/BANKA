@@ -10,15 +10,47 @@
 #include "bmp280/bmp280.h"
 #include "lsm6ds3/lsm6ds3.h"
 #include "lis2mdl/lis2mdl.h"
-#include "../Middlewares/Third_Party/FatFs/src/ff.h"
+#include "ff.h"
+#include "ff_gen_drv.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
+
+#pragma pack(push, 1)
+typedef struct {
+	uint16_t start;
+	uint16_t team_id;
+	uint32_t time;
+	int16_t temperature;
+	uint32_t pressure;
+	int16_t acc[3];
+	int16_t gyro[3];
+	uint8_t summ;
+
+	uint16_t pocket_number;
+	float shortness_gps;
+	float longitude_gps;
+	float height_gps;
+	uint8_t fix_gps;
+	int16_t temp_ds18b20;
+	int16_t magn[3];
+	uint16_t photorez;
+	uint8_t state;
+	uint8_t banka_summ;
+}packet_t;
+
+#pragma pack(pop)
+
+
 
 #define BMP280_ADDR (0x76 << 1)
 
 void app_main(void)
 {
+	packet_t packet = {0};
+	packet.start = 0xAAAA;
+	packet.team_id = 0xBBBB;
+
 	ds18b20_init(DS18B20_12_BIT);
 	uint32_t ds_start_time = HAL_GetTick();
 	ds18b20_conv();
@@ -89,29 +121,23 @@ void app_main(void)
 	volatile float magn[3] = {0};
 
 	FATFS sd;
-	FIL pocket1;
-	char pocket1_path[] = "pocket1.bin";
+	FIL packet1;
+	char packet1_path[] = "pocket1.bin";
 	FRESULT result_mount = f_mount(&sd, "", 1);
 	FRESULT rezult_pocket1 = 255;
 	UINT byte_count;
-
-	if (result_mount == FR_OK)
-	{
-		f_open(&pocket, &pocket1_path, FA_WRITE);
-	}
-	if (rezult_pocket1 == FR_OK);
-	{
-		f_write(&pocket1, buff, btw, &byte_count);
-	}
-
 
 
 	while(1)
 	{
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
+		packet.pressure = bmp_data.pressure;
+		packet.temperature = bmp_data.temperature;
 
 		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
 		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
+
+
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -142,6 +168,33 @@ void app_main(void)
 			ds_start_time = HAL_GetTick();
 		}
 
+
+		packet.pocket_number += 1;
+		packet.time = HAL_GetTick();
+
+		if (result_mount != FR_OK)
+		{
+			f_mount (NULL, "", 1);
+			extern Disk_drvTypeDef disk;
+			disk.is_initialized[0] = 0;
+			result_mount = f_mount(&sd, "", 1);
+		}
+
+		if (result_mount == FR_OK && rezult_pocket1 != FR_OK)
+		{
+			if (rezult_pocket1 != 255)
+				f_close(&packet1);
+			rezult_pocket1 = f_open(&packet1, (const TCHAR*) &packet1_path, FA_WRITE | FA_OPEN_ALWAYS | FA__WRITTEN);
+			if (rezult_pocket1 != FR_OK)
+				result_mount = 255;
+
+		}
+
+		if (rezult_pocket1 == FR_OK && result_mount == FR_OK)
+		{
+			rezult_pocket1 = f_write(&packet1, &packet, sizeof(packet_t), &byte_count);
+			rezult_pocket1 = f_sync(&packet1);
+		}
 
 		/*HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
 	}
