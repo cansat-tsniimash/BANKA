@@ -60,7 +60,7 @@ void e220_set_add(e220_connect_t* lora, uint16_t addr)
 	e220_write_reg(lora, 0x00, data, 2);
 }
 
-void e220_reg_0(e220_connect_t* bus, e220_air_rate_t adr, e220_serial_parity_bit bdr, e220_serial_port_rate cdr)
+void e220_reg_0(e220_connect_t* bus, e220_air_rate_t adr, e220_serial_parity_bit_t bdr, e220_serial_port_rate_t cdr)
 {
 	uint8_t data = 0;
 	data = data | adr;
@@ -68,4 +68,14 @@ void e220_reg_0(e220_connect_t* bus, e220_air_rate_t adr, e220_serial_parity_bit
 	data = data | (cdr << 5);
 	e220_write_reg(bus, 0x02, &data, 1);
 }
+
+void e220_reg_1(e220_connect_t* bus, e220_sub_packet_setting_t ddr, e220_rssi_ambient_noice_mode_t edr, e220_transmitting_power_t fdr)
+{
+	uint8_t data = 0;
+	data = data | (ddr << 6);
+	data = data | edr;
+	data = data | (fdr << 5);
+	e220_write_reg(bus, 0x02, &data, 1);
+}
+
 

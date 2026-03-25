@@ -45,8 +45,7 @@ typedef enum
 	E220_SERIAL_PARITY_BIT_8N1 = 0,
 	E220_SERIAL_PARITY_BIT_8O1 = 1,
 	E220_SERIAL_PARITY_BIT_8E1 = 2,
-	E220_SERIAL_PARITY_BIT_8N1 = 3,
-}e220_serial_parity_bit;
+}e220_serial_parity_bit_t;
 
 typedef enum
 {
@@ -58,9 +57,35 @@ typedef enum
 	E220_SERIAL_PORT_RATE_38400 = 5,
 	E220_SERIAL_PORT_RATE_57600 = 6,
 	E220_SERIAL_PORT_RATE_115200 = 7,
-}e220_serial_port_rate;
+}e220_serial_port_rate_t;
 
+typedef enum
+{
+	E220_SUB_PACKET_SETTING_200B = 0,
+	E220_SUB_PACKET_SETTING_128B = 1,
+	E220_SUB_PACKET_SETTING_64B = 2,
+	E220_SUB_PACKET_SETTING_32B = 3,
+}e220_sub_packet_setting_t;
 
+typedef enum
+{
+	E220_RSSI_AMBIENT_NOICE_ENABLE = 0,
+	E220_RSSI_AMBIENT_NOICE_DISABLE = 1,
+}e220_rssi_ambient_noice_mode_t;
+
+typedef enum
+{
+	E220_TRANSMITTING_POWER_22DBM = 0,
+	E220_TRANSMITTING_POWER_17DBM = 1,
+	E220_TRANSMITTING_POWER_13DBM = 2,
+	E220_TRANSMITTING_POWER_10DBM = 3,
+}e220_transmitting_power_t;
+
+void e220_set_channel(e220_connect_t* lora, uint8_t ch);
+void e220_set_add(e220_connect_t* lora, uint16_t addr);
+void e220_reg_0(e220_connect_t* bus, e220_air_rate_t adr, e220_serial_parity_bit_t bdr, e220_serial_port_rate_t cdr);
+void e220_reg_1(e220_connect_t* bus, e220_sub_packet_setting_t ddr, e220_rssi_ambient_noice_mode_t edr, e220_transmitting_power_t fdr);
+void e220_mode_switch (e220_connect_t* lora, lora_mode_t mode);
 //E220_SERIAL_PARITY_BIT = 4,
 	///E220_SERIAL_PORT_RATE =  7,///
 

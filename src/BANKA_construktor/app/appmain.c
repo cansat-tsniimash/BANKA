@@ -12,10 +12,11 @@
 #include "lis2mdl/lis2mdl.h"
 #include "ff.h"
 #include "ff_gen_drv.h"
+#include "lora/e220.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
-
+extern UART_HandleTypeDef huart2;
 #pragma pack(push, 1)
 typedef struct {
 	uint16_t start;
@@ -116,6 +117,22 @@ void app_main(void)
 	lis2mdl_data_rate_set(&lis, LIS2MDL_ODR_50Hz);
 	lis2mdl_power_mode_set(&lis, LIS2MDL_HIGH_RESOLUTION);
 
+	e220_connect_t e220_data;
+	e220_data.uart = &huart2;
+	e220_data.aux_pin = GPIO_PIN_3;
+	e220_data.aux_port = GPIOB;
+	e220_data.m0_pin = GPIO_PIN_1;
+	e220_data.m0_port = GPIOB;
+	e220_data.uart = &huart2;
+	e220_data.m1_pin = GPIO_PIN_0;
+	e220_data.m1_port = GPIOB;
+
+	e220_mode_switch(&e220_data, E220_MODE_DSM);
+	e220_set_channel(&e220_data, 1);
+	e220_set_add(&e220_data, 1);
+	e220_reg_0(&e220_data, E220_AIR_RATE_9P6, E220_SERIAL_PORT_RATE_9600, E220_SERIAL_PARITY_BIT_8N1);
+	e220_reg_1(&e220_data,E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
+	e220_mode_switch(&e220_data, E220_MODE_TM);
 
 	int16_t buf_lis[3] = {0};
 	volatile float magn[3] = {0};
