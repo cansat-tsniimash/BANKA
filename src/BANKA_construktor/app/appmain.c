@@ -196,7 +196,7 @@ void app_main(void)
 			rezult_pocket1 = f_sync(&packet1);
 		}
 
-		/*HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
+		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
 	}
 	return;
 }
