@@ -1,25 +1,19 @@
 import serial
 import struct
+from common import parse_one
 
 s = serial.Serial (port="COM5", baudrate=115200)
 s.timeout = 1.0
+f = open("text.data", "wb")
 
-data = bytes()
+accum = b""
 while True:
-	data = data + s.read(40)
+	chunk = s.read(1024)
+	f.write(chunk)
+	f.flush()
 
-	while len(data) >= 2 and (data[0] != 0xaa or data[1] != 0xaa):
-		data = data[1:]
-
-	if len(data) >= 27:
-		chk = data[0]
-		for b in data[1:27]:
-			chk = chk ^ b
-
-		if 0 == chk:
-			fstr = "<xxHLHLhhhhhh"
-			values = struct.unpack(fstr, data[:26])
-			print(values)
-			data = data[27:]
-		else:
-			data = data[1:]
+	accum = accum + chunk
+	while len(accum) > 27:
+		values, leftovers = parse_one(accum)
+		print(values, len(leftovers))
+		accum = leftovers
