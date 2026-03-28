@@ -6,3 +6,4 @@ while True:
 	chunk = s.read(40)
 	values = parse_one(chunk)
 	print(values)
+

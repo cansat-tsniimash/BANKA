@@ -1,10 +1,11 @@
 import serial
 import struct
-from common import parse_one
+from common import parse_one, convert
 
 s = serial.Serial (port="COM5", baudrate=115200)
 s.timeout = 1.0
 f = open("text.data", "wb")
+csv = open("file.csv", mode = "w")
 
 accum = b""
 while True:
@@ -15,5 +16,8 @@ while True:
 	accum = accum + chunk
 	while len(accum) > 27:
 		values, leftovers = parse_one(accum)
-		print(values, len(leftovers))
+		numbers = convert(values)
+
+		print(numbers)
+		csv.write(";".join([str(x).replace(".", '.') for x in numbers])+ "\n")
 		accum = leftovers
