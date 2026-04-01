@@ -42,7 +42,18 @@ typedef struct {
 
 #pragma pack(pop)
 
+uint8_t checksum(const void * data_, size_t data_size)
+{
+	const uint8_t *data = (const uint8_t*)data_;
+	if (data_size == 0)
+		return 0;
 
+	uint8_t c = data[0];
+	for (size_t i = 1; i < data_size; i++)
+		c = c ^ data[i];
+
+	return c;
+}
 
 #define BMP280_ADDR (0x76 << 1)
 
@@ -117,22 +128,27 @@ void app_main(void)
 	lis2mdl_data_rate_set(&lis, LIS2MDL_ODR_50Hz);
 	lis2mdl_power_mode_set(&lis, LIS2MDL_HIGH_RESOLUTION);
 
-	e220_connect_t e220_data;
-	e220_data.uart = &huart2;
-	e220_data.aux_pin = GPIO_PIN_3;
-	e220_data.aux_port = GPIOB;
-	e220_data.m0_pin = GPIO_PIN_1;
-	e220_data.m0_port = GPIOB;
-	e220_data.uart = &huart2;
-	e220_data.m1_pin = GPIO_PIN_0;
-	e220_data.m1_port = GPIOB;
 
-	e220_mode_switch(&e220_data, E220_MODE_DSM);
-	e220_set_channel(&e220_data, 1);
-	e220_set_add(&e220_data, 1);
-	e220_reg_0(&e220_data, E220_AIR_RATE_9P6, E220_SERIAL_PORT_RATE_9600, E220_SERIAL_PARITY_BIT_8N1);
-	e220_reg_1(&e220_data,E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
-	e220_mode_switch(&e220_data, E220_MODE_TM);
+	  e220_connect_t e220;
+	  e220.uart = &huart2;
+	  e220.aux_pin = GPIO_PIN_3;
+	  e220.aux_port = GPIOB;
+	  e220.m0_pin = GPIO_PIN_1;
+	  e220.m0_port = GPIOB;
+	  e220.m1_pin = GPIO_PIN_0;
+	  e220.m1_port = GPIOB;
+
+	  e220_mode_switch(&e220, E220_MODE_DSM);
+	  HAL_Delay(2000);
+	  e220_set_channel(&e220, 1);
+	  HAL_Delay(2000);
+	  e220_set_add(&e220, 0xAAAA);
+	  HAL_Delay(2999);
+	  e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
+	  HAL_Delay(2000);
+	  e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
+	  HAL_Delay(2000);
+	  e220_mode_switch(&e220, E220_MODE_TM);
 
 	int16_t buf_lis[3] = {0};
 	volatile float magn[3] = {0};
@@ -149,12 +165,17 @@ void app_main(void)
 	{
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 		packet.pressure = bmp_data.pressure;
-		packet.temperature = bmp_data.temperature;
+		packet.temperature = bmp_data.temperature * 16;
 
 		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
 		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
 
-
+//		uint8_t seq[128];
+//		for (size_t i = 0; i < sizeof(seq); i++)
+//			seq[i] = i;
+		packet.summ = checksum(&packet, offsetof(packet_t, summ));
+		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
+		//e220_send_packet(&e220, seq, sizeof(seq));
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -218,3 +239,8 @@ void app_main(void)
 	return;
 }
 
+///switch (stage)
+///{
+///case before_rocket;
+///	if
+///}

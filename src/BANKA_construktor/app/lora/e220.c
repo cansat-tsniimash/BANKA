@@ -72,10 +72,20 @@ void e220_reg_0(e220_connect_t* bus, e220_air_rate_t adr, e220_serial_parity_bit
 void e220_reg_1(e220_connect_t* bus, e220_sub_packet_setting_t ddr, e220_rssi_ambient_noice_mode_t edr, e220_transmitting_power_t fdr)
 {
 	uint8_t data = 0;
+	data = data | fdr;
+	data = data | (edr << 5);
 	data = data | (ddr << 6);
-	data = data | edr;
-	data = data | (fdr << 5);
-	e220_write_reg(bus, 0x02, &data, 1);
+	e220_write_reg(bus, 0x03, &data, 1);
 }
 
 
+void e220_send_packet(e220_connect_t *bus, uint8_t *reg_data, uint16_t len)
+{
+	uint16_t try = 0;
+	HAL_UART_Transmit(bus->uart, reg_data, len, 100);
+	while ( (HAL_GPIO_ReadPin(bus->aux_port, bus->aux_pin) == GPIO_PIN_RESET) && (try <20))
+	{
+		try++;
+		HAL_Delay(1);
+	}
+}
