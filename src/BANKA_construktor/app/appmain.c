@@ -13,6 +13,7 @@
 #include "ff.h"
 #include "ff_gen_drv.h"
 #include "lora/e220.h"
+#include "algoritm.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
@@ -139,15 +140,15 @@ void app_main(void)
 	  e220.m1_port = GPIOB;
 
 	  e220_mode_switch(&e220, E220_MODE_DSM);
-	  HAL_Delay(2000);
+	  HAL_Delay(200);
 	  e220_set_channel(&e220, 1);
-	  HAL_Delay(2000);
+	  HAL_Delay(200);
 	  e220_set_add(&e220, 0xAAAA);
-	  HAL_Delay(2999);
+	  HAL_Delay(300);
 	  e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
-	  HAL_Delay(2000);
+	  HAL_Delay(200);
 	  e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
-	  HAL_Delay(2000);
+	  HAL_Delay(200);
 	  e220_mode_switch(&e220, E220_MODE_TM);
 
 	int16_t buf_lis[3] = {0};
@@ -155,10 +156,16 @@ void app_main(void)
 
 	FATFS sd;
 	FIL packet1;
-	char packet1_path[] = "pocket1.bin";
-	FRESULT result_mount = f_mount(&sd, "", 1);
+	char packet1_path[] = "0:/pocket1.bin";
+	FRESULT result_mount = f_mount(&sd, "0:", 1);
+	f_mount(&sd, "1:", 1);
+
 	FRESULT rezult_pocket1 = 255;
 	UINT byte_count;
+	CanSatState_t state_now = STATE_INIT;
+	uint32_t state_timer = 0;
+	bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
+	uint32_t first_pressure = bmp_data.pressure;
 
 
 	while(1)
@@ -166,6 +173,7 @@ void app_main(void)
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 		packet.pressure = bmp_data.pressure;
 		packet.temperature = bmp_data.temperature * 16;
+		float altitude = 44330 * (1 - pow((float)bmp_data.pressure / first_pressure, (1.0 / 5.255)));
 
 		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
 		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
@@ -195,9 +203,6 @@ void app_main(void)
 				break;
 		}
 		gps_data = neo6mv2_GetData();
-		printf("cookie = %d\n", gps_data.cookie);
-		printf("%f %f\n",gps_data.latitude, gps_data.longitude);
-		printf("%d\n",gps_data.fixQuality);
 
 		if ((HAL_GetTick() - ds_start_time) > 750)
 		{
@@ -205,6 +210,50 @@ void app_main(void)
 			ds18b20_conv();
 			ds_start_time = HAL_GetTick();
 		}
+
+
+		switch (state_now)
+		{
+		case STATE_INIT:
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == GPIO_PIN_SET)
+			{
+				if (HAL_GetTick() - state_timer > 15000)
+				{
+					state_now = STATE_IN_ROCKET;
+				}
+			}
+			else
+			{
+				state_timer = HAL_GetTick();
+			}
+			break;
+//		case STATE_IN_ROCKET:
+//			if (HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_5) == GPIO_PIN_)//фоторезистор
+//				{
+//				state_now = STATE_FLIGHT;
+//				}
+//			break;
+		case STATE_IN_ROCKET:
+			if (altitude <= 100)
+			{
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
+			}
+//			break;
+//		case STATE_BB_SEPARATE:
+//			if ()//вкл_нагреватель_на_10с  пережигатель_вкл
+//			{
+//				пережигатель_вкл
+//				state_now = SATE_ON_GROUND;
+//			}
+//			break;
+//		case SATE_ON_GROUND:
+//			if ()//пережигатель_выкл
+//			{
+//			пищалка_вкл
+//			}
+//			break;
+		}
+
 
 
 		packet.pocket_number += 1;
@@ -238,9 +287,3 @@ void app_main(void)
 	}
 	return;
 }
-
-///switch (stage)
-///{
-///case before_rocket;
-///	if
-///}

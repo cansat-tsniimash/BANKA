@@ -57,18 +57,26 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define buzzer_Pin GPIO_PIN_0
+#define buzzer_GPIO_Port GPIOA
 #define m1_Pin GPIO_PIN_0
 #define m1_GPIO_Port GPIOB
 #define m0_Pin GPIO_PIN_1
 #define m0_GPIO_Port GPIOB
-#define sd_cs_Pin GPIO_PIN_12
-#define sd_cs_GPIO_Port GPIOB
+#define sd_cs_2_Pin GPIO_PIN_2
+#define sd_cs_2_GPIO_Port GPIOB
+#define state_switch_Pin GPIO_PIN_10
+#define state_switch_GPIO_Port GPIOB
+#define sd_cs_1_Pin GPIO_PIN_12
+#define sd_cs_1_GPIO_Port GPIOB
 #define led_Pin GPIO_PIN_8
 #define led_GPIO_Port GPIOA
 #define ds18b20_Pin GPIO_PIN_15
 #define ds18b20_GPIO_Port GPIOA
 #define aux_Pin GPIO_PIN_3
 #define aux_GPIO_Port GPIOB
+#define perezhigatel_Pin GPIO_PIN_5
+#define perezhigatel_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

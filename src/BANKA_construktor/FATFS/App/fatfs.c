@@ -24,6 +24,8 @@ FATFS USERFatFS;    /* File system object for USER logical drive */
 FIL USERFile;       /* File object for USER */
 
 /* USER CODE BEGIN Variables */
+uint8_t retUSER1;    /* Return value for USER */
+char USERPath1[4];   /* USER logical drive path */
 /* USER CODE END Variables */
 
 void MX_FATFS_Init(void)
@@ -33,19 +35,9 @@ void MX_FATFS_Init(void)
 
   /* USER CODE BEGIN Init */
   /* additional user code for init */
-  /* USER CODE END Init */
-}
+  retUSER1 = FATFS_LinkDriverEx(&USER_Driver, USERPath1, 1);
 
-/**
-  * @brief  Gets Time from RTC
-  * @param  None
-  * @retval Time in DWORD
-  */
-DWORD get_fattime(void)
-{
-  /* USER CODE BEGIN get_fattime */
-  return 0;
-  /* USER CODE END get_fattime */
+  /* USER CODE END Init */
 }
 
 /* USER CODE BEGIN Application */
