@@ -162,7 +162,7 @@ void app_main(void)
 
 	FRESULT rezult_pocket1 = 255;
 	UINT byte_count;
-	CanSatState_t state_now = STATE_INIT;
+	CanSatState_t state_now = STATE_IN_ROCKET;
 	uint32_t state_timer = 0;
 	bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 	uint32_t first_pressure = bmp_data.pressure;
@@ -236,7 +236,7 @@ void app_main(void)
 		case STATE_IN_ROCKET:
 			if (altitude <= 100)
 			{
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, 1);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
 			}
 //			break;
 //		case STATE_BB_SEPARATE:
