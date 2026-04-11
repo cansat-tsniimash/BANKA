@@ -14,10 +14,13 @@
 #include "ff_gen_drv.h"
 #include "lora/e220.h"
 #include "algoritm.h"
+#include "photorez/photorez.h"
+
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
+extern ADC_HandleTypeDef hadc1;
 #pragma pack(push, 1)
 typedef struct {
 	uint16_t start;
@@ -143,7 +146,7 @@ void app_main(void)
 	  HAL_Delay(200);
 	  e220_set_channel(&e220, 1);
 	  HAL_Delay(200);
-	  e220_set_add(&e220, 0xAAAA);
+	  e220_set_add(&e220, 43690);
 	  HAL_Delay(300);
 	  e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
 	  HAL_Delay(200);
@@ -158,7 +161,8 @@ void app_main(void)
 	FIL packet1;
 	char packet1_path[] = "0:/pocket1.bin";
 	FRESULT result_mount = f_mount(&sd, "0:", 1);
-	f_mount(&sd, "1:", 1);
+
+	//f_mount(&sd, "1:", 1);
 
 	FRESULT rezult_pocket1 = 255;
 	UINT byte_count;
@@ -167,28 +171,43 @@ void app_main(void)
 	bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 	uint32_t first_pressure = bmp_data.pressure;
 
+	float photorez_data;
+
+	uint16_t raw_adc_value;
 
 	while(1)
 	{
+		uint16_t raw_adc_value = 0;
+		HAL_ADC_Start(&hadc1);
+		HAL_ADC_GetValue(&hadc1);
+		packet.photorez = raw_adc_value;
+
+		/*HAL_ADC_Start(&hadc1);
+		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
+		{
+		    raw_adc_value = HAL_ADC_GetValue(&hadc1);
+		}
+		if (raw_adc_value < 1000) {
+		HAL_ADC_Start(&hadc1);
+		   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		}
+		else
+		{
+				HAL_ADC_Start(&hadc1);
+		    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		}*/
+
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 		packet.pressure = bmp_data.pressure;
-		packet.temperature = bmp_data.temperature * 16;
+		packet.temperature = bmp_data.temperature * 100;
 		float altitude = 44330 * (1 - pow((float)bmp_data.pressure / first_pressure, (1.0 / 5.255)));
 
 		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
 		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
-
-//		uint8_t seq[128];
-//		for (size_t i = 0; i < sizeof(seq); i++)
-//			seq[i] = i;
-		packet.summ = checksum(&packet, offsetof(packet_t, summ));
-		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
-		//e220_send_packet(&e220, seq, sizeof(seq));
-
 		for (int i = 0; i < 3; i++)
 		{
-			acc[i] = lsm6ds3_from_fs16g_to_mg(buf_lsm_xl[i]) /1000.0;
-			gyro[i] = lsm6ds3_from_fs125dps_to_mdps(buf_lsm_gy[i]) /1000.0;
+			packet.acc[i] = buf_lsm_xl[i];
+			packet.gyro[i] = buf_lsm_gy[i];
 		}
 
 		lis2mdl_magnetic_raw_get(&lis, buf_lis);
@@ -204,21 +223,24 @@ void app_main(void)
 		}
 		gps_data = neo6mv2_GetData();
 
+
 		if ((HAL_GetTick() - ds_start_time) > 750)
 		{
 			volatile float temp = ds18b20_readtemp();
 			ds18b20_conv();
 			ds_start_time = HAL_GetTick();
+
 		}
 
 
 		switch (state_now)
 		{
 		case STATE_INIT:
-			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == GPIO_PIN_SET)
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == GPIO_PIN_SET)//таймер 15 секунд после перекл. состояния
 			{
 				if (HAL_GetTick() - state_timer > 15000)
 				{
+					photorez_data = photorez_read_data();
 					state_now = STATE_IN_ROCKET;
 				}
 			}
@@ -227,17 +249,17 @@ void app_main(void)
 				state_timer = HAL_GetTick();
 			}
 			break;
-//		case STATE_IN_ROCKET:
-//			if (HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_5) == GPIO_PIN_)//фоторезистор
-//				{
-//				state_now = STATE_FLIGHT;
-//				}
-//			break;
 		case STATE_IN_ROCKET:
-			if (altitude <= 100)
-			{
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
-			}
+			if (photorez_read_data() >= photorez_data)//фоторезистор
+				{
+				state_now = STATE_FLIGHT;
+				}
+			break;
+//		case STATE_IN_ROCKET:
+//			if (altitude <= 100)
+//			{
+//				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+//			}
 //			break;
 //		case STATE_BB_SEPARATE:
 //			if ()//вкл_нагреватель_на_10с  пережигатель_вкл
@@ -258,6 +280,17 @@ void app_main(void)
 
 		packet.pocket_number += 1;
 		packet.time = HAL_GetTick();
+		packet.summ = checksum(&packet, offsetof(packet_t, summ));
+		packet.banka_summ = checksum(&packet, offsetof(packet_t, banka_summ) - offsetof(packet_t, pocket_number));
+
+
+		//		uint8_t seq[128];
+		//		for (size_t i = 0; i < sizeof(seq); i++)
+		//			seq[i] = i;
+
+		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
+		//e220_send_packet(&e220, seq, sizeof(seq));
+
 
 		if (result_mount != FR_OK)
 		{

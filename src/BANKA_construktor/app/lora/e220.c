@@ -46,7 +46,7 @@ void e220_write_reg(e220_connect_t* lora, uint8_t addr, uint8_t *data, uint8_t s
 
 void e220_set_channel(e220_connect_t* lora, uint8_t ch)
 {
-    if (ch < 83)
+    if (ch > 83)
         return;
 
     e220_write_reg(lora, 0x04, &ch, 1);
