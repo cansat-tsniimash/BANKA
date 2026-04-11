@@ -6,7 +6,7 @@ def parse_one(chunk: bytes):
 		while len(data) >= 2 and (data[0] != 0xaa or data[1] != 0xaa):
 			data = data[1:]
 
-		if len(data) < 27:
+		if len(data) < 56:
 			return None, data
 
 		chk = data[0]
@@ -19,6 +19,7 @@ def parse_one(chunk: bytes):
 			data = data[27:]
 			return values, data
 		else:
+			print("checksum error")
 			data = data[1:]
 
 
@@ -26,7 +27,7 @@ def convert(values: tuple):
 	return (
 	 values[0], #team id
 	 values[1], #время, мс
-	 values[2]/16, # температура, градусы
+	 values[2]/100, # температура, градусы
 	 values[3], # Давление, Па
 	 lsm6ds3_from_fs16g_to_mg(values[4]), # ускорение по X на 16г
 	 lsm6ds3_from_fs16g_to_mg(values[5]), # ускорение по У на 16г
