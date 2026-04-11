@@ -157,15 +157,20 @@ void app_main(void)
 	int16_t buf_lis[3] = {0};
 	volatile float magn[3] = {0};  // TODO: Убрать
 
-	FATFS sd;
+	FATFS sd_0;
+	FATFS sd_1;
 	FIL packet1;
+	FIL packet2;
 	char packet1_path[] = "0:/pocket1.bin";
-	FRESULT result_mount = f_mount(&sd, "0:", 1);
+	char packet2_path[] = "1:/pocket2.bin";
 
-	//f_mount(&sd, "1:", 1);
+	FRESULT result_mount_0 = f_mount(&sd_0, "0:", 1);
+	FRESULT result_mount_1 = f_mount(&sd_1, "1:", 1);
 
 	FRESULT rezult_pocket1 = 255;
+	FRESULT rezult_pocket2 = 255;
 	UINT byte_count;
+
 	CanSatState_t state_now = STATE_IN_ROCKET;
 	uint32_t state_timer = 0;
 	bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
@@ -288,29 +293,53 @@ void app_main(void)
 		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
 
 
-		if (result_mount != FR_OK)
+		if (result_mount_0 != FR_OK)
 		{
-			f_mount (NULL, "", 1);
+			f_mount(NULL, "0:", 1);
 			extern Disk_drvTypeDef disk;
 			disk.is_initialized[0] = 0;
-			result_mount = f_mount(&sd, "", 1);
+			result_mount_0 = f_mount(&sd_0, "0:", 1);
+			rezult_pocket1 = 250;
 		}
 
-		if (result_mount == FR_OK && rezult_pocket1 != FR_OK)
+		if (result_mount_1 != FR_OK)
+		{
+			f_mount(NULL, "1:", 1);
+			extern Disk_drvTypeDef disk;
+			disk.is_initialized[1] = 0;
+			result_mount_1 = f_mount(&sd_1, "1:", 1);
+			rezult_pocket2 = 250;
+		}
+
+		if (result_mount_0 == FR_OK && rezult_pocket1 != FR_OK)
 		{
 			if (rezult_pocket1 != 255)
 				f_close(&packet1);
 			rezult_pocket1 = f_open(&packet1, (const TCHAR*) &packet1_path, FA_WRITE | FA_OPEN_ALWAYS | FA__WRITTEN);
 			if (rezult_pocket1 != FR_OK)
-				result_mount = 255;
-
+				result_mount_0 = 255;
+		}
+		if (result_mount_1 == FR_OK && rezult_pocket2 != FR_OK)
+		{
+			if (rezult_pocket2 != 255)
+				f_close(&packet2);
+			rezult_pocket2 = f_open(&packet2, (const TCHAR*) &packet2_path, FA_WRITE | FA_OPEN_ALWAYS | FA__WRITTEN);
+			if (rezult_pocket2 != FR_OK)
+				result_mount_1 = 255;
 		}
 
-		if (rezult_pocket1 == FR_OK && result_mount == FR_OK)
+
+		if (rezult_pocket1 == FR_OK && result_mount_0 == FR_OK)
 		{
 			rezult_pocket1 = f_write(&packet1, &packet, sizeof(packet_t), &byte_count);
 			rezult_pocket1 = f_sync(&packet1);
 		}
+		if (rezult_pocket2 == FR_OK && result_mount_1 == FR_OK)
+		{
+			rezult_pocket2 = f_write(&packet2, &packet, sizeof(packet_t), &byte_count);
+			rezult_pocket2 = f_sync(&packet2);
+		}
+
 
 		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
 	}
