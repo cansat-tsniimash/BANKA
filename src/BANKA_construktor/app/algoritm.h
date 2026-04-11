@@ -16,5 +16,5 @@ typedef enum {
     STATE_IN_ROCKET = 1,
     STATE_FLIGHT = 2,
 	STATE_BB_SEPARATE = 3,
-	SATE_ON_GROUND = 4
+	STATE_ON_GROUND = 4
 } CanSatState_t;

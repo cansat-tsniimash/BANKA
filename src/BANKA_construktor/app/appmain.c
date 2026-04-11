@@ -59,7 +59,7 @@ uint8_t checksum(const void * data_, size_t data_size)
 	return c;
 }
 
-#define BMP280_ADDR (0x76 << 1)
+#define BMP280_ADDR (0x76 << 1) // TODO: Макрос не используется
 
 void app_main(void)
 {
@@ -115,8 +115,8 @@ void app_main(void)
 
 	int16_t buf_lsm_gy[3] = {0};
 	int16_t buf_lsm_xl[3] = {0};
-	volatile float gyro[3] = {0};
-	volatile float acc[3] = {0};
+	volatile float gyro[3] = {0};  // TODO: Убрать
+	volatile float acc[3] = {0};  // TODO: Убрать
 
 	lis_data_t lis_bus;
 	lis_bus.ADDR = 0x1E << 1;
@@ -133,29 +133,29 @@ void app_main(void)
 	lis2mdl_power_mode_set(&lis, LIS2MDL_HIGH_RESOLUTION);
 
 
-	  e220_connect_t e220;
-	  e220.uart = &huart2;
-	  e220.aux_pin = GPIO_PIN_3;
-	  e220.aux_port = GPIOB;
-	  e220.m0_pin = GPIO_PIN_1;
-	  e220.m0_port = GPIOB;
-	  e220.m1_pin = GPIO_PIN_0;
-	  e220.m1_port = GPIOB;
+	e220_connect_t e220;
+	e220.uart = &huart2;
+	e220.aux_pin = GPIO_PIN_3;
+	e220.aux_port = GPIOB;
+	e220.m0_pin = GPIO_PIN_1;
+	e220.m0_port = GPIOB;
+	e220.m1_pin = GPIO_PIN_0;
+	e220.m1_port = GPIOB;
 
-	  e220_mode_switch(&e220, E220_MODE_DSM);
-	  HAL_Delay(200);
-	  e220_set_channel(&e220, 1);
-	  HAL_Delay(200);
-	  e220_set_add(&e220, 43690);
-	  HAL_Delay(300);
-	  e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
-	  HAL_Delay(200);
-	  e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
-	  HAL_Delay(200);
-	  e220_mode_switch(&e220, E220_MODE_TM);
+	e220_mode_switch(&e220, E220_MODE_DSM);
+	HAL_Delay(200);
+	e220_set_channel(&e220, 1);
+	HAL_Delay(200);
+	e220_set_add(&e220, 43690);
+	HAL_Delay(300);
+	e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
+	HAL_Delay(200);
+	e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
+	HAL_Delay(200);
+	e220_mode_switch(&e220, E220_MODE_TM);
 
 	int16_t buf_lis[3] = {0};
-	volatile float magn[3] = {0};
+	volatile float magn[3] = {0};  // TODO: Убрать
 
 	FATFS sd;
 	FIL packet1;
@@ -177,6 +177,7 @@ void app_main(void)
 
 	while(1)
 	{
+		// TODO: Дописать фоторезистор
 		uint16_t raw_adc_value = 0;
 		HAL_ADC_Start(&hadc1);
 		HAL_ADC_GetValue(&hadc1);
@@ -213,7 +214,7 @@ void app_main(void)
 		lis2mdl_magnetic_raw_get(&lis, buf_lis);
 		for (int i = 0; i < 3; i++)
 		{
-			magn[i] = lis2mdl_from_lsb_to_mgauss(buf_lis[i]) /1000.0;
+			magn[i] = lis2mdl_from_lsb_to_mgauss(buf_lis[i]) /1000.0; // TODO: Записать в пакет телеметрии
 		}
 
 		for (int i = 0; i <= 10; i++)
@@ -221,12 +222,12 @@ void app_main(void)
 			if (neo6mv2_work() == 1)
 				break;
 		}
-		gps_data = neo6mv2_GetData();
+		gps_data = neo6mv2_GetData(); // TODO: Записать в пакет телеметрии
 
 
 		if ((HAL_GetTick() - ds_start_time) > 750)
 		{
-			volatile float temp = ds18b20_readtemp();
+			volatile float temp = ds18b20_readtemp(); // TODO: Записать в пакет телеметрии
 			ds18b20_conv();
 			ds_start_time = HAL_GetTick();
 
@@ -284,12 +285,7 @@ void app_main(void)
 		packet.banka_summ = checksum(&packet, offsetof(packet_t, banka_summ) - offsetof(packet_t, pocket_number));
 
 
-		//		uint8_t seq[128];
-		//		for (size_t i = 0; i < sizeof(seq); i++)
-		//			seq[i] = i;
-
 		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
-		//e220_send_packet(&e220, seq, sizeof(seq));
 
 
 		if (result_mount != FR_OK)
