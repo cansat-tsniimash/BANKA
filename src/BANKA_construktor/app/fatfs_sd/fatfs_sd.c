@@ -88,7 +88,7 @@ static uint8_t SD_ReadyWait(int pdrv)
 	uint8_t res;
 
 	/* timeout 500ms */
-	uint16_t Timer2 = 500;
+	Timer2 = 500;
 
 	/* if SD goes ready, receives 0xFF */
 	do {
@@ -154,7 +154,7 @@ static bool SD_RxDataBlock(int pdrv, BYTE *buff, UINT len)
 	uint8_t token;
 
 	/* timeout 200ms */
-	uint16_t Timer1 = 200;
+	Timer1 = 200;
 
 	/* loop until receive a response or timeout */
 	do {
@@ -282,7 +282,7 @@ DSTATUS SD_disk_initialize(BYTE pdrv)
 	if (SD_SendCmd(pdrv, CMD0, 0) == 1)
 	{
 		/* timeout 1 sec */
-		uint16_t Timer1 = 1000;
+		Timer1 = 1000;
 
 		/* SDC V2+ accept CMD8 command, http://elm-chan.org/docs/mmc/mmc_e.html */
 		if (SD_SendCmd(pdrv, CMD8, 0x1AA) == 1)

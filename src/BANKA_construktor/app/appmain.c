@@ -33,7 +33,7 @@ typedef struct {
 	uint8_t summ;
 
 	uint16_t pocket_number;
-	float shortness_gps;
+	float latitude_gps;
 	float longitude_gps;
 	float height_gps;
 	uint8_t fix_gps;
@@ -183,10 +183,7 @@ void app_main(void)
 	while(1)
 	{
 		// TODO: Дописать фоторезистор
-		uint16_t raw_adc_value = 0;
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_GetValue(&hadc1);
-		packet.photorez = raw_adc_value;
+ 		packet.photorez = photorez_read_data() * 1000;
 
 		/*HAL_ADC_Start(&hadc1);
 		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
@@ -219,7 +216,7 @@ void app_main(void)
 		lis2mdl_magnetic_raw_get(&lis, buf_lis);
 		for (int i = 0; i < 3; i++)
 		{
-			magn[i] = lis2mdl_from_lsb_to_mgauss(buf_lis[i]) /1000.0; // TODO: Записать в пакет телеметрии
+			packet.magn[i] = buf_lis[i];
 		}
 
 		for (int i = 0; i <= 10; i++)
@@ -227,12 +224,14 @@ void app_main(void)
 			if (neo6mv2_work() == 1)
 				break;
 		}
-		gps_data = neo6mv2_GetData(); // TODO: Записать в пакет телеметрии
-
+		gps_data = neo6mv2_GetData();
+		packet.longitude_gps = gps_data.longitude;
+		packet.height_gps = gps_data.altitude;
+		packet.latitude_gps = gps_data.latitude;
 
 		if ((HAL_GetTick() - ds_start_time) > 750)
 		{
-			volatile float temp = ds18b20_readtemp(); // TODO: Записать в пакет телеметрии
+			packet.temp_ds18b20 = ds18b20_readtemp() * 100;
 			ds18b20_conv();
 			ds_start_time = HAL_GetTick();
 
@@ -261,7 +260,7 @@ void app_main(void)
 				state_now = STATE_FLIGHT;
 				}
 			break;
-//		case STATE_IN_ROCKET:
+//		case STATE_FLIGHT:
 //			if (altitude <= 100)
 //			{
 //				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
@@ -277,7 +276,7 @@ void app_main(void)
 //		case SATE_ON_GROUND:
 //			if ()//пережигатель_выкл
 //			{
-//			пищалка_вкл
+//				//пищалка_вкл
 //			}
 //			break;
 		}
@@ -287,7 +286,7 @@ void app_main(void)
 		packet.pocket_number += 1;
 		packet.time = HAL_GetTick();
 		packet.summ = checksum(&packet, offsetof(packet_t, summ));
-		packet.banka_summ = checksum(&packet, offsetof(packet_t, banka_summ) - offsetof(packet_t, pocket_number));
+		packet.banka_summ = checksum(&packet.pocket_number, offsetof(packet_t, banka_summ) - offsetof(packet_t, pocket_number));
 
 
 		e220_send_packet(&e220, (uint8_t *)&packet, sizeof(packet_t));
