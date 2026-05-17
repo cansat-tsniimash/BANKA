@@ -171,12 +171,15 @@ void app_main(void)
 	FRESULT rezult_pocket2 = 255;
 	UINT byte_count;
 
-	CanSatState_t state_now = STATE_IN_ROCKET;
+	CanSatState_t state_now = STATE_INIT;
 	uint32_t state_timer = 0;
 	bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 	uint32_t first_pressure = bmp_data.pressure;
 
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+
 	float photorez_data;
+	photorez_data = photorez_read_data();
 
 	uint16_t raw_adc_value;
 
@@ -241,11 +244,10 @@ void app_main(void)
 		switch (state_now)
 		{
 		case STATE_INIT:
-			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == GPIO_PIN_SET)//таймер 15 секунд после перекл. состояния
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4) == GPIO_PIN_SET)//таймер 15 секунд после перекл. состояния
 			{
-				if (HAL_GetTick() - state_timer > 15000)
+				if (HAL_GetTick() - state_timer > 5000)
 				{
-					photorez_data = photorez_read_data();
 					state_now = STATE_IN_ROCKET;
 				}
 			}
@@ -255,30 +257,28 @@ void app_main(void)
 			}
 			break;
 		case STATE_IN_ROCKET:
-			if (photorez_read_data() >= photorez_data)//фоторезистор
-				{
+			if (photorez_read_data() >= photorez_data * 0.95)//фоторезистор
+			{
 				state_now = STATE_FLIGHT;
-				}
+			}
 			break;
-//		case STATE_FLIGHT:
-//			if (altitude <= 100)
-//			{
-//				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
-//			}
-//			break;
-//		case STATE_BB_SEPARATE:
-//			if ()//вкл_нагреватель_на_10с  пережигатель_вкл
-//			{
-//				пережигатель_вкл
-//				state_now = SATE_ON_GROUND;
-//			}
-//			break;
-//		case SATE_ON_GROUND:
-//			if ()//пережигатель_выкл
-//			{
-//				//пищалка_вкл
-//			}
-//			break;
+		case STATE_FLIGHT:
+			if (altitude <= 1)
+			{
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+				state_now = STATE_BB_SEPARATE;
+
+			}
+			break;
+		case STATE_BB_SEPARATE:
+			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 1)
+			{
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+			}
+			break;
+
 		}
 
 

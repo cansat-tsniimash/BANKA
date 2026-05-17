@@ -416,8 +416,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, buzzer_Pin|led_Pin|ds18b20_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, m1_Pin|m0_Pin|sd_cs_2_Pin|sd_cs_1_Pin
-                          |perezhigatel_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, m1_Pin|m0_Pin|sd_cs_2_Pin|nagrevatel_Pin
+                          |sd_cs_1_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(kz_GPIO_Port, kz_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : mux_A_Pin mux_b_Pin mux_C_Pin */
   GPIO_InitStruct.Pin = mux_A_Pin|mux_b_Pin|mux_C_Pin;
@@ -433,19 +436,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : m1_Pin m0_Pin sd_cs_2_Pin sd_cs_1_Pin
-                           perezhigatel_Pin */
-  GPIO_InitStruct.Pin = m1_Pin|m0_Pin|sd_cs_2_Pin|sd_cs_1_Pin
-                          |perezhigatel_Pin;
+  /*Configure GPIO pin : concevic_Pin */
+  GPIO_InitStruct.Pin = concevic_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(concevic_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : m1_Pin m0_Pin sd_cs_2_Pin nagrevatel_Pin
+                           sd_cs_1_Pin kz_Pin */
+  GPIO_InitStruct.Pin = m1_Pin|m0_Pin|sd_cs_2_Pin|nagrevatel_Pin
+                          |sd_cs_1_Pin|kz_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : state_switch_Pin aux_Pin */
-  GPIO_InitStruct.Pin = state_switch_Pin|aux_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ds18b20_Pin */
@@ -454,6 +457,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(ds18b20_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : aux_Pin state_Pin */
+  GPIO_InitStruct.Pin = aux_Pin|state_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
