@@ -73,6 +73,8 @@ void Error_Handler(void);
 #define m0_GPIO_Port GPIOB
 #define sd_cs_2_Pin GPIO_PIN_2
 #define sd_cs_2_GPIO_Port GPIOB
+#define peregrev_Pin GPIO_PIN_10
+#define peregrev_GPIO_Port GPIOB
 #define nagrevatel_Pin GPIO_PIN_11
 #define nagrevatel_GPIO_Port GPIOB
 #define sd_cs_1_Pin GPIO_PIN_12

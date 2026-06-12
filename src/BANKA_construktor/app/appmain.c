@@ -150,7 +150,7 @@ void app_main(void)
 	HAL_Delay(300);
 	e220_reg_0(&e220, E220_AIR_RATE_9P6, E220_SERIAL_PARITY_BIT_8N1, E220_SERIAL_PORT_RATE_9600);
 	HAL_Delay(200);
-	e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_10DBM);
+	e220_reg_1(&e220, E220_SUB_PACKET_SETTING_200B, E220_RSSI_AMBIENT_NOICE_DISABLE, E220_TRANSMITTING_POWER_22DBM);
 	HAL_Delay(200);
 	e220_mode_switch(&e220, E220_MODE_TM);
 
@@ -202,6 +202,9 @@ void app_main(void)
 				HAL_ADC_Start(&hadc1);
 		    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 		}*/
+
+ 		HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_8);
+
 
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 		packet.pressure = bmp_data.pressure;
@@ -259,10 +262,12 @@ void app_main(void)
 		case STATE_IN_ROCKET:
 			if (photorez_read_data() >= photorez_data * 0.95)//фоторезистор
 			{
+
 				state_now = STATE_FLIGHT;
 			}
 			break;
 		case STATE_FLIGHT:
+			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 			if (altitude <= 1)
 			{
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
@@ -271,6 +276,7 @@ void app_main(void)
 
 			}
 			break;
+
 		case STATE_BB_SEPARATE:
 			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 1)
 			{
