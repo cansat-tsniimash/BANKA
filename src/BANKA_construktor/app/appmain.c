@@ -15,7 +15,7 @@
 #include "lora/e220.h"
 #include "algoritm.h"
 #include "photorez/photorez.h"
-
+#include "thermistor/thermistor.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern UART_HandleTypeDef huart1;
@@ -42,6 +42,8 @@ typedef struct {
 	uint16_t photorez;
 	uint8_t state;
 	uint8_t banka_summ;
+	uint16_t thermistor_osn;
+	uint8_t peregrev;
 }packet_t;
 
 #pragma pack(pop)
@@ -202,8 +204,10 @@ void app_main(void)
 				HAL_ADC_Start(&hadc1);
 		    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 		}*/
+ 		packet.peregrev = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
+ 		packet.thermistor_osn = thermistor_read_data() * 1000;
 
- 		HAL_GPIO_ReadPin(GPIOB, GPIO_Pin_8);
+ 		HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
 
 
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
@@ -267,20 +271,32 @@ void app_main(void)
 			}
 			break;
 		case STATE_FLIGHT:
-			HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-			if (altitude <= 1)
+			if (altitude <= 1) //200 meters
 			{
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-				state_now = STATE_BB_SEPARATE;
-
+				if (HAL_GetTick() - state_timer > 500)
+				{
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
+					if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == 1)
+		 			{
+		 				if (HAL_GetTick() - state_timer > 1000)
+		 				{
+		 					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+		 					state_now = STATE_BB_SEPARATE;
+		 				}
+		 			}
+					else state_timer = HAL_GetTick();
+				}
 			}
+			else state_timer = HAL_GetTick();
 			break;
 
 		case STATE_BB_SEPARATE:
 			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 1)
 			{
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
 			}
 			break;
