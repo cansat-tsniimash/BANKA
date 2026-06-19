@@ -41,9 +41,9 @@ typedef struct {
 	int16_t magn[3];
 	uint16_t photorez;
 	uint8_t state;
-	uint8_t banka_summ;
 	uint16_t thermistor_osn;
 	uint8_t peregrev;
+	uint8_t banka_summ;
 }packet_t;
 
 #pragma pack(pop)
@@ -267,37 +267,49 @@ void app_main(void)
 			if (photorez_read_data() >= photorez_data * 0.95)//фоторезистор
 			{
 
-				state_now = STATE_FLIGHT;
+				state_now = STATE_FLIGHT_0;
 			}
 			break;
-		case STATE_FLIGHT:
+		case STATE_FLIGHT_0:
 			if (altitude <= 1) //200 meters
 			{
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-				if (HAL_GetTick() - state_timer > 500)
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);//kz_on
+				state_now = STATE_FLIGHT_1;
+			}
+			else
+			{
+				state_timer = HAL_GetTick();
+			}
+			break;
+		case STATE_FLIGHT_1:
+			if (HAL_GetTick() - state_timer > 500)
+			{
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);//kz_off
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);//nagravatel_on
+				state_now = STATE_FLIGHT_2;
+			}
+			else
+		case STATE_FLIGHT_2:
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == 1)//read_peregrev_bb
+			{
+				if (HAL_GetTick() - state_timer > 1000)
 				{
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
-					if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == 1)
-		 			{
-		 				if (HAL_GetTick() - state_timer > 1000)
-		 				{
-		 					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-		 					state_now = STATE_BB_SEPARATE;
-		 				}
-		 			}
-					else state_timer = HAL_GetTick();
+					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);//kz_on
+				state_now = STATE_BB_SEPARATE;
 				}
 			}
-			else state_timer = HAL_GetTick();
+			else
+			{
+			state_timer = HAL_GetTick();
+			}
 			break;
 
 		case STATE_BB_SEPARATE:
 			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == 1)
 			{
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);//nagrevatel_off
+				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);//kz_off
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);//buzzer_on
 			}
 			break;
 
