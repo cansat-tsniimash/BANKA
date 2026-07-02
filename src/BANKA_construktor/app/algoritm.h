@@ -7,9 +7,6 @@
 
 #ifndef SRC_ALGORITM_H_
 #define SRC_ALGORITM_H_
-#endif
-
-
 
 typedef enum {
     STATE_INIT = 0,
@@ -18,6 +15,7 @@ typedef enum {
 	STATE_FLIGHT_1 = 3,
 	STATE_FLIGHT_2 = 4,
 	STATE_FLIGHT_3 = 5,
-	STATE_BB_SEPARATE = 6,
-	STATE_ON_GROUND = 7,
+	STATE_BB_SEPARATE = 6
 } CanSatState_t;
+
+#endif

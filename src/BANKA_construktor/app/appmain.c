@@ -43,6 +43,7 @@ typedef struct {
 	uint8_t state;
 	uint16_t thermistor_osn;
 	uint8_t peregrev;
+	int16_t altitude;
 	uint8_t banka_summ;
 }packet_t;
 
@@ -66,6 +67,7 @@ uint8_t checksum(const void * data_, size_t data_size)
 void app_main(void)
 {
 	packet_t packet = {0};
+	sizeof(packet_t);
 	packet.start = 0xAAAA;
 	packet.team_id = 0xBBBB;
 
@@ -88,7 +90,7 @@ void app_main(void)
 	bmp280.settings.osr_p = BME280_OVERSAMPLING_16X;
 	bmp280.settings.osr_t = BME280_OVERSAMPLING_16X;
 	bmp280.settings.filter = BME280_OVERSAMPLING_16X;
-	bmp280.settings.standby_time = BME280_STANDBY_TIME_20_MS;
+	bmp280.settings.standby_time = BME280_STANDBY_TIME_10_MS;
 
 	bmp280_bus_t bmp_bus;
 	bmp_bus.ADDR = 0x76 << 1;
@@ -180,32 +182,32 @@ void app_main(void)
 
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
-	float photorez_data;
-	photorez_data = photorez_read_data();
-
+	const float photorez_data = photorez_read_data();
 	uint16_t raw_adc_value;
 
 	while(1)
 	{
 		// TODO: Дописать фоторезистор
  		packet.photorez = photorez_read_data() * 1000;
-
-		/*HAL_ADC_Start(&hadc1);
+		HAL_ADC_Start(&hadc1);
 		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
 		{
 		    raw_adc_value = HAL_ADC_GetValue(&hadc1);
 		}
 		if (raw_adc_value < 1000) {
 		HAL_ADC_Start(&hadc1);
-		   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 		}
 		else
 		{
 				HAL_ADC_Start(&hadc1);
 		    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		}*/
+		}
+		HAL_Delay(5);
  		packet.peregrev = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
+ 		HAL_Delay(5);
  		packet.thermistor_osn = thermistor_read_data() * 1000;
+ 		packet.state = state_now;
 
  		HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
 
@@ -214,6 +216,7 @@ void app_main(void)
 		packet.pressure = bmp_data.pressure;
 		packet.temperature = bmp_data.temperature * 100;
 		float altitude = 44330 * (1 - pow((float)bmp_data.pressure / first_pressure, (1.0 / 5.255)));
+		packet.altitude = (int16_t)(altitude * 10.0f);
 
 		lsm6ds3_acceleration_raw_get(&lsm6ds3, buf_lsm_xl);
 		lsm6ds3_angular_rate_raw_get(&lsm6ds3, buf_lsm_gy);
@@ -247,7 +250,6 @@ void app_main(void)
 
 		}
 
-
 		switch (state_now)
 		{
 		case STATE_INIT:
@@ -263,15 +265,16 @@ void app_main(void)
 				state_timer = HAL_GetTick();
 			}
 			break;
+
 		case STATE_IN_ROCKET:
 			if (photorez_read_data() >= photorez_data * 0.95)//фоторезистор
 			{
-
 				state_now = STATE_FLIGHT_0;
 			}
 			break;
+
 		case STATE_FLIGHT_0:
-			if (altitude <= 1) //200 meters
+			if (altitude <= 3) //200 meters
 			{
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);//kz_on
 				state_now = STATE_FLIGHT_1;
@@ -281,26 +284,29 @@ void app_main(void)
 				state_timer = HAL_GetTick();
 			}
 			break;
+
 		case STATE_FLIGHT_1:
 			if (HAL_GetTick() - state_timer > 500)
 			{
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);//kz_off
 				HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);//nagravatel_on
+				state_timer = HAL_GetTick();
 				state_now = STATE_FLIGHT_2;
 			}
-			else
+			break;
+
 		case STATE_FLIGHT_2:
-			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == 1)//read_peregrev_bb
+			if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10) == GPIO_PIN_SET)//read_peregrev_bb
 			{
 				if (HAL_GetTick() - state_timer > 1000)
 				{
 					HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);//kz_on
-				state_now = STATE_BB_SEPARATE;
+					state_now = STATE_BB_SEPARATE;
 				}
 			}
 			else
 			{
-			state_timer = HAL_GetTick();
+				state_timer = HAL_GetTick();
 			}
 			break;
 
@@ -312,10 +318,7 @@ void app_main(void)
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);//buzzer_on
 			}
 			break;
-
 		}
-
-
 
 		packet.pocket_number += 1;
 		packet.time = HAL_GetTick();
@@ -337,7 +340,7 @@ void app_main(void)
 
 		if (result_mount_1 != FR_OK)
 		{
-			f_mount(NULL, "1:", 1);
+		f_mount(NULL, "1:", 1);
 			extern Disk_drvTypeDef disk;
 			disk.is_initialized[1] = 0;
 			result_mount_1 = f_mount(&sd_1, "1:", 1);
@@ -374,7 +377,7 @@ void app_main(void)
 		}
 
 
-		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);*/
+		//HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
 	}
 	return;
 }
