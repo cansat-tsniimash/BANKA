@@ -69,7 +69,7 @@ void app_main(void)
 	packet_t packet = {0};
 	sizeof(packet_t);
 	packet.start = 0xAAAA;
-	packet.team_id = 0xBBBB;
+	packet.team_id = 0xBAD3;
 
 	ds18b20_init(DS18B20_12_BIT);
 	uint32_t ds_start_time = HAL_GetTick();
@@ -187,30 +187,10 @@ void app_main(void)
 
 	while(1)
 	{
-		// TODO: Дописать фоторезистор
  		packet.photorez = photorez_read_data() * 1000;
-		HAL_ADC_Start(&hadc1);
-		if (HAL_ADC_PollForConversion(&hadc1, 10) == HAL_OK)
-		{
-		    raw_adc_value = HAL_ADC_GetValue(&hadc1);
-		}
-		if (raw_adc_value < 1000) {
-		HAL_ADC_Start(&hadc1);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-		}
-		else
-		{
-				HAL_ADC_Start(&hadc1);
-		    	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		}
-		HAL_Delay(5);
  		packet.peregrev = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
- 		HAL_Delay(5);
  		packet.thermistor_osn = thermistor_read_data() * 1000;
  		packet.state = state_now;
-
- 		HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_10);
-
 
 		bme280_get_sensor_data(BME280_TEMP | BME280_PRESS, &bmp_data, &bmp280);
 		packet.pressure = bmp_data.pressure;
@@ -239,9 +219,7 @@ void app_main(void)
 		}
 		gps_data = neo6mv2_GetData();
 		packet.longitude_gps = gps_data.longitude;
-		packet.height_gps = gps_data.altitude;
-		packet.latitude_gps = gps_data.latitude;
-
+		packet.height_gps = gps_data.altitude; okie & 0x1F);
 		if ((HAL_GetTick() - ds_start_time) > 750)
 		{
 			packet.temp_ds18b20 = ds18b20_readtemp() * 100;
@@ -340,7 +318,7 @@ void app_main(void)
 
 		if (result_mount_1 != FR_OK)
 		{
-		f_mount(NULL, "1:", 1);
+			f_mount(NULL, "1:", 1);
 			extern Disk_drvTypeDef disk;
 			disk.is_initialized[1] = 0;
 			result_mount_1 = f_mount(&sd_1, "1:", 1);
