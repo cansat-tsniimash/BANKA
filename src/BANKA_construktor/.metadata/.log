@@ -1,0 +1,18 @@
+!SESSION 2026-04-01 20:06:28.616 -----------------------------------------------
+eclipse.buildId=Version 1.17.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=ru_RU
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2026-04-01 20:07:05.529
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-04-01 20:07:05.533
+!MESSAGE Log4j2 initialized with config file C:\Users\nikit\Documents\CanSat\repo\BANKA\src\BANKA_construktor\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-04-01 20:07:11.461
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.equinox.p2.metadata.repository 4 1000 2026-04-01 20:07:47.917
+!MESSAGE No repository found at https://sw-center.st.com/stm32cubeide/updatesite1.
